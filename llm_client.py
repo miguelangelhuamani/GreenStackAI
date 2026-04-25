@@ -62,7 +62,15 @@ class LLMClient:
                     timeout=60,
                 )
                 response.raise_for_status()
-                return response.json()["content"]["text"]
+                resp_json = response.json()
+                content = resp_json.get("content", resp_json)
+                if isinstance(content, list):
+                    return content[0]["text"]
+                elif isinstance(content, dict):
+                    return content.get("text", str(content))
+                else:
+                    return str(content)
+
             except requests.exceptions.HTTPError as e:
                 # 529 = Anthropic overloaded, retry
                 if e.response is not None and e.response.status_code in (429, 529):
