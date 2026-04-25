@@ -3,6 +3,7 @@ import argparse
 import os
 import csv
 import inspect
+import time
 from collections import defaultdict
 
 from benchmark_tasks import (
@@ -96,7 +97,7 @@ def compute_vis(baseline_metrics, candidate_metrics, candidate_code, original_co
     vis = max(0.0, 0.7 * rt_gain + 0.3 * mem_gain - qp)
     return {"vis": vis, "runtime_gain_pct": rt_gain, "memory_gain_pct": mem_gain, "quality_penalty": qp}
 
-def run_full_evaluation(llm_client=None, run_agent=True, run_baselines=True, n_trials=3):
+def run_full_evaluation(llm_client=None, run_agent=True, run_baselines=True, n_trials=3, resume_from=None):
     harness = PerformanceEngine()
     
     tasks = [
@@ -159,7 +160,16 @@ def run_full_evaluation(llm_client=None, run_agent=True, run_baselines=True, n_t
 
     bg_map = {}
     
+    task_names_list = [t[0] for t in tasks]
+    
     for task_name, task_instance, input_data in tasks:
+        if resume_from and resume_from in task_names_list:
+            start_idx = task_names_list.index(resume_from)
+            current_idx = task_names_list.index(task_name)
+            if current_idx < start_idx:
+                print(f"[Resume] Skipping {task_name}")
+                continue
+                
         print(f"--- Starting Task: {task_name} ---")
         import textwrap
         slow_src = textwrap.dedent(inspect.getsource(task_instance.slow_version))
@@ -184,6 +194,7 @@ def run_full_evaluation(llm_client=None, run_agent=True, run_baselines=True, n_t
                     ss_res = run_single_shot_baseline(slow_src, task_name, llm_client, harness, input_data)
                     record("Single-Shot LLM", task_name, t+1, ss_res.get("metrics"), 
                            ss_res.get("rewritten_code", slow_src) or slow_src, slow_src)
+                    time.sleep(3)
             
             # 4) One-Pass Profile Guided
             if run_baselines:
@@ -191,6 +202,7 @@ def run_full_evaluation(llm_client=None, run_agent=True, run_baselines=True, n_t
                     op_res = run_one_pass_baseline(slow_src, task_name, task_instance.slow_version, input_data, llm_client, harness)
                     record("One-Pass Profile", task_name, t+1, op_res.get("metrics"), 
                            op_res.get("rewritten_code", slow_src) or slow_src, slow_src)
+                    time.sleep(3)
             
             # 5) Full ReAct Agent
             if run_agent:
@@ -199,6 +211,7 @@ def run_full_evaluation(llm_client=None, run_agent=True, run_baselines=True, n_t
                     ag_res = agent.execute_cycle(slow_src, task_instance.slow_version, input_data, task_name)
                     record("Critic-Refiner Agent", task_name, t+1, ag_res.get("final_metrics"), 
                            ag_res.get("final_code", slow_src), slow_src)
+                    time.sleep(3)
 
     # Save details
     os.makedirs('results', exist_ok=True)
@@ -250,6 +263,7 @@ def run_full_evaluation(llm_client=None, run_agent=True, run_baselines=True, n_t
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate GreenStackAI")
     parser.add_argument("--no-llm", action="store_true", help="Skip any LLM-based runs")
+    parser.add_argument("--resume-from", type=str, default=None, help="Resume evaluation from this task name (skips earlier tasks)")
     args = parser.parse_args()
 
     os.makedirs('results', exist_ok=True)
@@ -263,5 +277,6 @@ if __name__ == "__main__":
         llm_client=llm,
         run_agent=not args.no_llm,
         run_baselines=True,
-        n_trials=3
+        n_trials=3,
+        resume_from=args.resume_from
     )

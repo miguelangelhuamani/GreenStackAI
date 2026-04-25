@@ -9,11 +9,11 @@ from typing import Optional
 @dataclass
 class LLMConfig:
     model: str = "claude-sonnet-4-5-20250929"
-    max_tokens: int = 1500
+    max_tokens: int = 2048
     temperature: float = 0.2
-    retries: int = 3
-    retry_backoff_s: float = 1.0
-    api_key: Optional[str] = None  # falls back to ANTHROPIC_API_KEY env var
+    retries: int = 8          # was 3 — increase to 8
+    retry_backoff_s: float = 15.0  # was 1.0 — increase to 15s
+    api_key: Optional[str] = None
     provider: Optional[str] = None # Added for compatibility with run_eval.py instantiation
 
 class LLMClient:
@@ -61,7 +61,13 @@ class LLMClient:
                     json=payload,
                     timeout=60,
                 )
-                response.raise_for_status()
+                if not response.ok:
+                    try:
+                        err_body = response.json()
+                    except Exception:
+                        err_body = response.text
+                    print(f"[Claude API ERROR {response.status_code}] {err_body}")
+                    response.raise_for_status()
                 resp_json = response.json()
                 content = resp_json.get("content", resp_json)
                 if isinstance(content, list):
@@ -72,10 +78,12 @@ class LLMClient:
                     return str(content)
 
             except requests.exceptions.HTTPError as e:
-                # 529 = Anthropic overloaded, retry
                 if e.response is not None and e.response.status_code in (429, 529):
                     last_err = e
-                    time.sleep(self.cfg.retry_backoff_s * (2 ** attempt))
+                    # Respect Anthropic's retry-after header if present
+                    retry_after = float(e.response.headers.get("retry-after", self.cfg.retry_backoff_s * (2 ** attempt)))
+                    print(f"[Rate limit] 429 hit. Waiting {retry_after:.1f}s before retry {attempt+1}/{self.cfg.retries}...")
+                    time.sleep(retry_after)
                     continue
                 raise
             except Exception as e:

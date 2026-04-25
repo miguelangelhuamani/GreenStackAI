@@ -67,6 +67,9 @@ class RefactoringAgent:
 
     def plan_refactor(self, source_code, metrics):
         user_prompt = build_critic_user_prompt(source_code, metrics)
+        if not user_prompt or len(user_prompt.strip()) == 0:
+            print("[Agent] WARNING: empty critic prompt, skipping.")
+            return {"error": "empty_prompt"}
         response = self.llm_client.generate(CRITIC_DEV_PROMPT, user_prompt)
         try:
             return parse_json_strict(response)
@@ -82,11 +85,20 @@ class RefactoringAgent:
         
         for i in range(self.max_iterations):
             critic_plan = self.plan_refactor(best_code, best_metrics)
-            if "error" in critic_plan:
-                print(f"Iteration {i}: Critic failed to parse. Breaking.")
+            if not critic_plan or "error" in critic_plan or len(critic_plan) == 0:
+                print(f"[Agent] Critic returned no usable plan at iteration {i}. Stopping.")
                 break
                 
             refiner_prompt = build_refiner_user_prompt(best_code, critic_plan, constraints)
+            if not refiner_prompt or len(refiner_prompt.strip()) == 0:
+                print(f"[Agent] WARNING: empty refiner prompt at iteration {i}, skipping.")
+                continue
+            
+            MAX_PROMPT_CHARS = 60000
+            if len(refiner_prompt) > MAX_PROMPT_CHARS:
+                print(f"[Agent] WARNING: refiner prompt too long ({len(refiner_prompt)} chars), truncating source code.")
+                refiner_prompt = refiner_prompt[:MAX_PROMPT_CHARS]
+                
             refiner_response = self.llm_client.generate(REFINER_DEV_PROMPT, refiner_prompt)
             candidate_code = self.extract_code(refiner_response)
             
