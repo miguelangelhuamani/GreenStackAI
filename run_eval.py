@@ -19,7 +19,7 @@ from llm_client import LLMClient, LLMConfig
 
 def generate_duplicate_data():
     random.seed(42)
-    return [random.randint(0, 2499) for _ in range(5000)]
+    return [random.randint(0, 499) for _ in range(1000)] # Reduced from 5000 to 1000
 
 def generate_search_data():
     random.seed(42)
@@ -57,8 +57,8 @@ def generate_memo_data():
 
 def generate_ds_choice_data():
     random.seed(42)
-    universe = [random.randint(0, 100000) for _ in range(50000)]
-    queries = [random.randint(0, 100000) for _ in range(10000)]
+    universe = [random.randint(0, 10000) for _ in range(5000)] # Reduced from 50000 to 5000
+    queries = [random.randint(0, 10000) for _ in range(1000)] # Reduced from 10000 to 1000
     return (universe, queries)
 
 def generate_multipass_data():
@@ -66,6 +66,9 @@ def generate_multipass_data():
     return [random.uniform(0.0, 100.0) for _ in range(500000)]
 
 def compute_vis(baseline_metrics, candidate_metrics, candidate_code, original_code):
+    if candidate_code == original_code:
+        return {"vis": 0.0, "runtime_gain_pct": 0.0, "memory_gain_pct": 0.0, "quality_penalty": 0.0}
+        
     bg_rt = baseline_metrics["median_duration_seconds"]
     bg_mem = baseline_metrics["median_peak_memory_kb"]
     cg_rt = candidate_metrics["median_duration_seconds"]
@@ -131,9 +134,25 @@ def run_full_evaluation(llm_client=None, run_agent=True, run_baselines=True, n_t
             
         vis_res = compute_vis(bg_map[task_name], metrics_data, c_code, o_code)
         reg = vis_res["runtime_gain_pct"] < 0 or vis_res["memory_gain_pct"] < 0
+        
+        # Check correctness by comparing outputs
+        bg_res = bg_map[task_name]["result"]
+        cg_res = metrics_data["result"]
+        try:
+            if isinstance(bg_res, list) and bg_res and type(bg_res[0]) in (int, float, str):
+                is_correct = sorted(bg_res) == sorted(cg_res)
+            elif isinstance(bg_res, float):
+                is_correct = abs(bg_res - cg_res) / max(1.0, abs(bg_res)) < 1e-4
+            else:
+                is_correct = bg_res == cg_res
+        except Exception:
+            is_correct = False
+            
+        print(f"[{task_name}] {sys_name} - Corr: {is_correct}")
+        
         results.append({
             "task_name": task_name, "system": sys_name, "trial": trial,
-            "correctness": True, "runtime_speedup_pct": vis_res["runtime_gain_pct"],
+            "correctness": is_correct, "runtime_speedup_pct": vis_res["runtime_gain_pct"],
             "ram_reduction_pct": vis_res["memory_gain_pct"], "vis": vis_res["vis"],
             "regression": reg
         })
@@ -141,8 +160,10 @@ def run_full_evaluation(llm_client=None, run_agent=True, run_baselines=True, n_t
     bg_map = {}
     
     for task_name, task_instance, input_data in tasks:
-        slow_src = inspect.getsource(task_instance.slow_version)
-        fast_src = inspect.getsource(task_instance.fast_version)
+        print(f"--- Starting Task: {task_name} ---")
+        import textwrap
+        slow_src = textwrap.dedent(inspect.getsource(task_instance.slow_version))
+        fast_src = textwrap.dedent(inspect.getsource(task_instance.fast_version))
         
         # 1) Original Slow Baseline
         bm = harness.get_median_metrics(task_instance.slow_version, input_data)

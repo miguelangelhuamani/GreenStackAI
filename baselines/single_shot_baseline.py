@@ -16,13 +16,21 @@ def run_single_shot_baseline(source_code, task_name, llm_client, harness, input_
         return {"rewritten_code": None, "metrics": None, "success": False}
         
     namespace = {}
+    import textwrap
     try:
-        exec(extracted_code, namespace)
+        exec(textwrap.dedent(extracted_code), namespace)
         funcs = [v for k,v in namespace.items() if callable(v) and not k.startswith('_')]
         candidate_func = funcs[-1] if funcs else None
         
         if candidate_func:
-            metrics = harness.get_median_metrics(candidate_func, input_data)
+            import inspect
+            sig = inspect.signature(candidate_func)
+            if len(sig.parameters) == 2:
+                wrapper = lambda data: candidate_func(None, data)
+            else:
+                wrapper = candidate_func
+                
+            metrics = harness.get_median_metrics(wrapper, input_data)
             return {"rewritten_code": extracted_code, "metrics": metrics, "success": metrics["success"]}
         return {"rewritten_code": extracted_code, "metrics": None, "success": False}
     except Exception:

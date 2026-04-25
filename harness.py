@@ -1,23 +1,19 @@
 import time
-import resource
 import sys
 import statistics
+import tracemalloc
 
 class PerformanceEngine:
-    def _get_peak_memory_kb(self):
-        maxrss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-        if sys.platform == 'darwin':
-            return maxrss / 1024.0
-        else:
-            return float(maxrss)
-
     def get_metrics(self, target_function, input_data):
+        tracemalloc.start()
         start_time = time.perf_counter()
         
         try:
             result = target_function(input_data)
             end_time = time.perf_counter()
-            end_mem = self._get_peak_memory_kb()
+            _, peak = tracemalloc.get_traced_memory()
+            tracemalloc.stop()
+            end_mem = peak / 1024.0
             
             return {
                 "success": True,
@@ -27,7 +23,9 @@ class PerformanceEngine:
             }
         except Exception as execution_error:
             end_time = time.perf_counter()
-            end_mem = self._get_peak_memory_kb()
+            _, peak = tracemalloc.get_traced_memory()
+            tracemalloc.stop()
+            end_mem = peak / 1024.0
             
             return {
                 "success": False,

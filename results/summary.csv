@@ -1,0 +1,21 @@
+task_name,system,correctness_rate,mean_runtime_speedup_pct,mean_ram_reduction_pct,mean_vis,regression_rate
+Duplicate Detection,Baseline Slow,1.0,0.0,0.0,0.0,0.0
+Duplicate Detection,Static Rule,1.0,-6.130202955758151,0.0,0.0,1.0
+Linear Search,Baseline Slow,1.0,0.0,0.0,0.0,0.0
+Linear Search,Static Rule,1.0,0.0,0.0,0.0,0.0
+Loop Aggregation,Baseline Slow,1.0,0.0,0.0,0.0,0.0
+Loop Aggregation,Static Rule,1.0,64.72092332502773,0.0,45.30464632751941,0.0
+Top-K Selection,Baseline Slow,1.0,0.0,0.0,0.0,0.0
+Top-K Selection,Static Rule,1.0,0.0,0.0,0.0,0.0
+Nested-Loop Join,Baseline Slow,1.0,0.0,0.0,0.0,0.0
+Nested-Loop Join,Static Rule,1.0,0.0,0.0,0.0,0.0
+String Concatenation,Baseline Slow,1.0,0.0,0.0,0.0,0.0
+String Concatenation,Static Rule,1.0,98.78110797914778,0.6447773038389049,69.3402087765551,0.0
+Redundant List,Baseline Slow,1.0,0.0,0.0,0.0,0.0
+Redundant List,Static Rule,1.0,0.0,0.0,0.0,0.0
+Memoization,Baseline Slow,1.0,0.0,0.0,0.0,0.0
+Memoization,Static Rule,1.0,99.99936869933897,0.0,69.99955808953727,0.0
+Data Structure Choice,Baseline Slow,1.0,0.0,0.0,0.0,0.0
+Data Structure Choice,Static Rule,1.0,0.0,0.0,0.0,0.0
+Multi-Pass Reduction,Baseline Slow,1.0,0.0,0.0,0.0,0.0
+Multi-Pass Reduction,Static Rule,1.0,0.0,0.0,0.0,0.0

@@ -95,9 +95,10 @@ class RefactoringAgent:
                 continue
                 
             candidate_namespace = {}
+            import textwrap
             try:
                 # Need to use a fresh namespace with imports if required
-                exec(candidate_code, candidate_namespace)
+                exec(textwrap.dedent(candidate_code), candidate_namespace)
                 candidate_func = candidate_namespace.get(slow_callable.__name__)
                 
                 # Fallback if name changed
@@ -109,7 +110,14 @@ class RefactoringAgent:
                 if not candidate_func:
                     raise ValueError(f"Function {slow_callable.__name__} not found in rewritten code")
                     
-                new_metrics = self.harness.get_median_metrics(candidate_func, input_data)
+                import inspect
+                sig = inspect.signature(candidate_func)
+                if len(sig.parameters) == 2:
+                    wrapper = lambda data: candidate_func(None, data)
+                else:
+                    wrapper = candidate_func
+                    
+                new_metrics = self.harness.get_median_metrics(wrapper, input_data)
                 
                 if not new_metrics["success"]:
                     print(f"ROLLED BACK iteration {i}: execution failed - {new_metrics.get('error')}")
