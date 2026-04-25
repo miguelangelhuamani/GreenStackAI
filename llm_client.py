@@ -1,89 +1,87 @@
 # llm_client.py
 from __future__ import annotations
-
 import os
 import time
+import requests
 from dataclasses import dataclass
 from typing import Optional
 
-try:
-    from openai import OpenAI
-except ImportError:
-    OpenAI = None
-
-
 @dataclass
 class LLMConfig:
-    # Pick ONE:
-    # - "openai_responses" (recommended)
-    # - "openai_chat"      (older, still supported)
-    provider: str = "openai_responses"
-
-    # Example models shown in OpenAI docs include gpt-5.* (pick what your team has access to)
-    model: str = "gpt-5-mini"
-
+    model: str = "claude-sonnet-4-5-20250929"
+    max_tokens: int = 1500
     temperature: float = 0.2
-    max_output_tokens: int = 1400
-
-    # Keep cost bounded
-    reasoning_effort: str = "low"  # "low"|"medium"|"high" depending on model support
     retries: int = 3
-    retry_backoff_s: float = 0.8
-
-    # Optional: for local gateways / proxies
-    base_url: Optional[str] = None
-
+    retry_backoff_s: float = 1.0
+    api_key: Optional[str] = None  # falls back to ANTHROPIC_API_KEY env var
+    provider: Optional[str] = None # Added for compatibility with run_eval.py instantiation
 
 class LLMClient:
     def __init__(self, cfg: LLMConfig):
         self.cfg = cfg
-        if cfg.provider.startswith("openai"):
-            if OpenAI is None:
-                raise RuntimeError("Missing dependency. Run: pip install openai")
-            kwargs = {}
-            if cfg.base_url:
-                kwargs["base_url"] = cfg.base_url
-            # SDK reads OPENAI_API_KEY automatically per quickstart/docs :contentReference[oaicite:1]{index=1}
-            self.client = OpenAI(**kwargs)
+        # Force model to Claude regardless of what was passed by run_eval.py
+        self.cfg.model = "claude-sonnet-4-5-20250929"
+        
+        self.api_key = cfg.api_key or os.environ.get("ANTHROPIC_API_KEY")
+        if not self.api_key:
+            raise RuntimeError(
+                "No API key found. Set ANTHROPIC_API_KEY environment variable "
+                "or pass api_key in LLMConfig."
+            )
+        self.url = "https://api.anthropic.com/v1/messages"
+        self.headers = {
+            "Content-Type": "application/json",
+            "x-api-key": self.api_key,
+            "anthropic-version": "2023-06-01",
+        }
 
     def generate(self, developer_instructions: str, user_input: str) -> str:
         """
-        Returns plain text content.
-        Keeps your agent logic "yours" (no frameworks); only wraps the raw API call.
+        Sends developer_instructions as the system prompt and user_input
+        as the user message. Returns the response text.
+        Compatible with the existing generate() call signature used
+        throughout agent_skeleton.py and all baselines.
         """
+        payload = {
+            "model": self.cfg.model,
+            "max_tokens": self.cfg.max_tokens,
+            "temperature": self.cfg.temperature,
+            "system": developer_instructions,
+            "messages": [
+                {"role": "user", "content": user_input}
+            ],
+        }
+
         last_err = None
         for attempt in range(self.cfg.retries):
             try:
-                if self.cfg.provider == "openai_responses":
-                    # Responses API usage from OpenAI docs :contentReference[oaicite:2]{index=2}
-                    resp = self.client.responses.create(
-                        model=self.cfg.model,
-                        reasoning={"effort": self.cfg.reasoning_effort},
-                        input=[
-                            {"role": "developer", "content": developer_instructions},
-                            {"role": "user", "content": user_input},
-                        ],
-                        temperature=self.cfg.temperature,
-                        max_output_tokens=self.cfg.max_output_tokens,
-                    )
-                    return resp.output_text
-
-                if self.cfg.provider == "openai_chat":
-                    # Chat Completions example in official reference :contentReference[oaicite:3]{index=3}
-                    completion = self.client.chat.completions.create(
-                        model=self.cfg.model,
-                        messages=[
-                            {"role": "developer", "content": developer_instructions},
-                            {"role": "user", "content": user_input},
-                        ],
-                        temperature=self.cfg.temperature,
-                    )
-                    return completion.choices[0].message.content or ""
-
-                raise ValueError(f"Unknown provider: {self.cfg.provider}")
-
+                response = requests.post(
+                    self.url,
+                    headers=self.headers,
+                    json=payload,
+                    timeout=60,
+                )
+                response.raise_for_status()
+                return response.json()["content"]["text"]
+            except requests.exceptions.HTTPError as e:
+                # 529 = Anthropic overloaded, retry
+                if e.response is not None and e.response.status_code in (429, 529):
+                    last_err = e
+                    time.sleep(self.cfg.retry_backoff_s * (2 ** attempt))
+                    continue
+                raise
             except Exception as e:
                 last_err = e
                 time.sleep(self.cfg.retry_backoff_s * (2 ** attempt))
 
-        raise RuntimeError(f"LLM call failed after retries. Last error: {last_err}")
+        raise RuntimeError(f"Claude API call failed after {self.cfg.retries} retries. Last error: {last_err}")
+
+if __name__ == "__main__":
+    client = LLMClient(LLMConfig())
+    response = client.generate(
+        developer_instructions="You are a helpful assistant.",
+        user_input="Reply with exactly: CLAUDE_OK"
+    )
+    print(f"Smoke test response: {response}")
+    assert "CLAUDE_OK" in response, f"Unexpected response: {response}"
+    print("✅ LLM client smoke test passed.")

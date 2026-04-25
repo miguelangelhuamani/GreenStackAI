@@ -25,8 +25,10 @@ Ensure you are using Python 3.10+. It is highly recommended to build within a cl
 3. `pip install -r requirements.txt`
 
 ### API Key
-Ensure you export your OpenAI API key for LLM-based tasks correctly onto bash paths.
-`export OPENAI_API_KEY="sk-..."`
+This project uses the Anthropic Claude API.
+Set your key before running:
+    export ANTHROPIC_API_KEY=your_key_here
+Model used: claude-sonnet-4-5-20250929
 
 ## Running the Benchmark
 ### Run full evaluation (with LLM)

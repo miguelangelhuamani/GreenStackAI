@@ -1,20 +1,20 @@
 task_name,system,trial,correctness,runtime_speedup_pct,ram_reduction_pct,vis,regression
 Duplicate Detection,Baseline Slow,1,True,0.0,0.0,0.0,False
-Duplicate Detection,Static Rule,1,True,-6.130202955758151,0.0,0.0,True
+Duplicate Detection,Static Rule,1,True,-8.132370846849186,0.0,0.0,True
 Linear Search,Baseline Slow,1,True,0.0,0.0,0.0,False
 Linear Search,Static Rule,1,True,0.0,0.0,0.0,False
 Loop Aggregation,Baseline Slow,1,True,0.0,0.0,0.0,False
-Loop Aggregation,Static Rule,1,True,64.72092332502773,0.0,45.30464632751941,False
+Loop Aggregation,Static Rule,1,True,65.91651691719566,0.0,46.141561842036964,False
 Top-K Selection,Baseline Slow,1,True,0.0,0.0,0.0,False
 Top-K Selection,Static Rule,1,True,0.0,0.0,0.0,False
 Nested-Loop Join,Baseline Slow,1,True,0.0,0.0,0.0,False
 Nested-Loop Join,Static Rule,1,True,0.0,0.0,0.0,False
 String Concatenation,Baseline Slow,1,True,0.0,0.0,0.0,False
-String Concatenation,Static Rule,1,True,98.78110797914778,0.6447773038389049,69.3402087765551,False
+String Concatenation,Static Rule,1,True,98.81442059456576,0.6447773038389049,69.36352760734769,False
 Redundant List,Baseline Slow,1,True,0.0,0.0,0.0,False
 Redundant List,Static Rule,1,True,0.0,0.0,0.0,False
 Memoization,Baseline Slow,1,True,0.0,0.0,0.0,False
-Memoization,Static Rule,1,True,99.99936869933897,0.0,69.99955808953727,False
+Memoization,Static Rule,1,True,99.99924769996434,0.0,69.99947338997504,False
 Data Structure Choice,Baseline Slow,1,True,0.0,0.0,0.0,False
 Data Structure Choice,Static Rule,1,True,0.0,0.0,0.0,False
 Multi-Pass Reduction,Baseline Slow,1,True,0.0,0.0,0.0,False
