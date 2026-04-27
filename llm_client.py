@@ -11,28 +11,52 @@ class LLMConfig:
     model: str = "claude-sonnet-4-5-20250929"
     max_tokens: int = 2048
     temperature: float = 0.2
-    retries: int = 8          # was 3 — increase to 8
-    retry_backoff_s: float = 15.0  # was 1.0 — increase to 15s
+    retries: int = 8
+    retry_backoff_s: float = 15.0
     api_key: Optional[str] = None
-    provider: Optional[str] = None # Added for compatibility with run_eval.py instantiation
+    provider: Optional[str] = None
+    base_url: Optional[str] = None
 
 class LLMClient:
     def __init__(self, cfg: LLMConfig):
         self.cfg = cfg
-        # Force model to Claude regardless of what was passed by run_eval.py
-        self.cfg.model = "claude-sonnet-4-5-20250929"
-        
-        self.api_key = cfg.api_key or os.environ.get("ANTHROPIC_API_KEY")
+        provider = (cfg.provider or os.environ.get("LLM_PROVIDER") or "anthropic").lower()
+        if provider in {"openai", "openai_responses", "openai_compatible", "tinker"}:
+            self.provider = "openai_compatible"
+            self._init_openai_compatible()
+        else:
+            self.provider = "anthropic"
+            self._init_anthropic()
+
+    def _init_anthropic(self) -> None:
+        self.api_key = self.cfg.api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not self.api_key:
-            raise RuntimeError(
-                "No API key found. Set ANTHROPIC_API_KEY environment variable "
-                "or pass api_key in LLMConfig."
-            )
-        self.url = "https://api.anthropic.com/v1/messages"
+            raise RuntimeError("No API key found. Set ANTHROPIC_API_KEY or pass api_key in LLMConfig.")
+        self.url = (self.cfg.base_url or os.environ.get("ANTHROPIC_BASE_URL") or "https://api.anthropic.com").rstrip("/") + "/v1/messages"
         self.headers = {
             "Content-Type": "application/json",
             "x-api-key": self.api_key,
             "anthropic-version": "2023-06-01",
+        }
+
+    def _init_openai_compatible(self) -> None:
+        self.api_key = (
+            self.cfg.api_key
+            or os.environ.get("TINKER_API_KEY")
+            or os.environ.get("OPENAI_API_KEY")
+        )
+        if not self.api_key:
+            raise RuntimeError("No API key found. Set TINKER_API_KEY or OPENAI_API_KEY.")
+        base_url = (
+            self.cfg.base_url
+            or os.environ.get("TINKER_BASE_URL")
+            or os.environ.get("OPENAI_BASE_URL")
+            or "https://api.openai.com/v1"
+        )
+        self.url = base_url.rstrip("/") + "/chat/completions"
+        self.headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
         }
 
     def generate(self, developer_instructions: str, user_input: str) -> str:
@@ -42,15 +66,24 @@ class LLMClient:
         Compatible with the existing generate() call signature used
         throughout agent_skeleton.py and all baselines.
         """
-        payload = {
-            "model": self.cfg.model,
-            "max_tokens": self.cfg.max_tokens,
-            "temperature": self.cfg.temperature,
-            "system": developer_instructions,
-            "messages": [
-                {"role": "user", "content": user_input}
-            ],
-        }
+        if self.provider == "anthropic":
+            payload = {
+                "model": self.cfg.model,
+                "max_tokens": self.cfg.max_tokens,
+                "temperature": self.cfg.temperature,
+                "system": developer_instructions,
+                "messages": [{"role": "user", "content": user_input}],
+            }
+        else:
+            payload = {
+                "model": self.cfg.model,
+                "max_tokens": self.cfg.max_tokens,
+                "temperature": self.cfg.temperature,
+                "messages": [
+                    {"role": "system", "content": developer_instructions},
+                    {"role": "user", "content": user_input},
+                ],
+            }
 
         last_err = None
         for attempt in range(self.cfg.retries):
@@ -69,20 +102,23 @@ class LLMClient:
                     print(f"[Claude API ERROR {response.status_code}] {err_body}")
                     response.raise_for_status()
                 resp_json = response.json()
-                content = resp_json.get("content", resp_json)
-                if isinstance(content, list):
-                    return content[0]["text"]
-                elif isinstance(content, dict):
-                    return content.get("text", str(content))
-                else:
+                if self.provider == "anthropic":
+                    content = resp_json.get("content", resp_json)
+                    if isinstance(content, list):
+                        return content[0].get("text", "")
+                    if isinstance(content, dict):
+                        return content.get("text", str(content))
                     return str(content)
+                choices = resp_json.get("choices", [])
+                if choices:
+                    return choices[0].get("message", {}).get("content", "")
+                return str(resp_json)
 
             except requests.exceptions.HTTPError as e:
-                if e.response is not None and e.response.status_code in (429, 529):
+                if e.response is not None and e.response.status_code in (429, 500, 502, 503, 504, 529):
                     last_err = e
-                    # Respect Anthropic's retry-after header if present
                     retry_after = float(e.response.headers.get("retry-after", self.cfg.retry_backoff_s * (2 ** attempt)))
-                    print(f"[Rate limit] 429 hit. Waiting {retry_after:.1f}s before retry {attempt+1}/{self.cfg.retries}...")
+                    print(f"[Retryable HTTP {e.response.status_code}] Waiting {retry_after:.1f}s before retry {attempt+1}/{self.cfg.retries}...")
                     time.sleep(retry_after)
                     continue
                 raise
@@ -90,7 +126,7 @@ class LLMClient:
                 last_err = e
                 time.sleep(self.cfg.retry_backoff_s * (2 ** attempt))
 
-        raise RuntimeError(f"Claude API call failed after {self.cfg.retries} retries. Last error: {last_err}")
+        raise RuntimeError(f"LLM API call failed after {self.cfg.retries} retries. Last error: {last_err}")
 
 if __name__ == "__main__":
     client = LLMClient(LLMConfig())

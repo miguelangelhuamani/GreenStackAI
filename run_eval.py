@@ -264,19 +264,29 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate GreenStackAI")
     parser.add_argument("--no-llm", action="store_true", help="Skip any LLM-based runs")
     parser.add_argument("--resume-from", type=str, default=None, help="Resume evaluation from this task name (skips earlier tasks)")
+    parser.add_argument("--trials", type=int, default=int(os.environ.get("EVAL_TRIALS", "3")), help="Trials per LLM system per task")
+    parser.add_argument("--provider", type=str, default=os.environ.get("LLM_PROVIDER", "anthropic"), help="LLM provider: anthropic|openai_compatible|tinker")
+    parser.add_argument("--model", type=str, default=os.environ.get("LLM_MODEL", "claude-sonnet-4-5-20250929"), help="Model identifier for the configured provider")
+    parser.add_argument("--base-url", type=str, default=os.environ.get("LLM_BASE_URL"), help="Optional override for API base URL")
     args = parser.parse_args()
 
     os.makedirs('results', exist_ok=True)
     
     llm = None
     if not args.no_llm:
-        # Defaults to the env settings in llm_client
-        llm = LLMClient(LLMConfig(provider="openai_responses", model="gpt-4o-mini", temperature=0.1))
+        llm = LLMClient(
+            LLMConfig(
+                provider=args.provider,
+                model=args.model,
+                temperature=0.1,
+                base_url=args.base_url,
+            )
+        )
 
     run_full_evaluation(
         llm_client=llm,
         run_agent=not args.no_llm,
         run_baselines=True,
-        n_trials=3,
+        n_trials=args.trials,
         resume_from=args.resume_from
     )

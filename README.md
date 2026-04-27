@@ -25,14 +25,29 @@ Ensure you are using Python 3.10+. It is highly recommended to build within a cl
 3. `pip install -r requirements.txt`
 
 ### API Key
-This project uses the Anthropic Claude API.
-Set your key before running:
-    export ANTHROPIC_API_KEY=your_key_here
-Model used: claude-sonnet-4-5-20250929
+The evaluator supports both direct Anthropic and OpenAI-compatible endpoints (e.g., Tinker).
+
+Anthropic:
+```bash
+export LLM_PROVIDER=anthropic
+export ANTHROPIC_API_KEY=your_key_here
+export LLM_MODEL=your_model_id_here
+```
+
+Tinker / OpenAI-compatible:
+```bash
+export LLM_PROVIDER=tinker
+export TINKER_API_KEY=your_tinker_key_here
+export TINKER_BASE_URL=your_tinker_base_url_here   # e.g. https://<your-host>/v1
+export LLM_MODEL=your_model_id_here
+```
 
 ## Running the Benchmark
 ### Run full evaluation (with LLM)
 python run_eval.py
+
+### Run low-cost mode (1 trial)
+python run_eval.py --trials 1
 
 ### Run without LLM (baselines only)
 python run_eval.py --no-llm
@@ -66,6 +81,16 @@ The custom framework mimics sequential refinement implementing the generic seque
 - **Regression rate**: Negative VIS variations breaking application stability natively.
 
 ## Results
-| Task | System | CorrRate | Speedup% | RAMred% | VIS |
-|:-----|:-------|:---------|:---------|:--------|:----|
-| ...  | ...    | ...      | ...      | ...     | ... |
+The latest committed one-trial run outputs are tracked in:
+- `results/results.csv` (per-task, per-system records)
+- `results/summary.csv` (aggregated by task/system)
+
+Overall system-level means across all 10 tasks:
+
+| System | Correctness (%) | Mean Speedup (%) | Mean RAM Reduction (%) | Mean VIS | Regression Rate (%) |
+|:-------|-----------------:|-----------------:|-----------------------:|---------:|--------------------:|
+| Baseline Slow | 100 | 0.00 | 0.00 | 0.00 | 0 |
+| Static Rule | 100 | 25.58 | 0.06 | 18.32 | 10 |
+| Single-Shot LLM | 10 | 19.88 | 0.00 | 13.92 | 0 |
+| One-Pass Profile | 90 | -45.77 | 12.49 | 45.98 | 10 |
+| Critic-Refiner Agent | 90 | 64.78 | 22.42 | 52.07 | 0 |

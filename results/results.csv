@@ -1,17 +1,51 @@
 task_name,system,trial,correctness,runtime_speedup_pct,ram_reduction_pct,vis,regression
-Loop Aggregation,Baseline Slow,1,True,0.0,0.0,0.0,False
-Loop Aggregation,Static Rule,1,True,75.38285121792954,0.0,52.767995852550676,False
-Top-K Selection,Baseline Slow,1,True,0.0,0.0,0.0,False
-Top-K Selection,Static Rule,1,True,0.0,0.0,0.0,False
-Nested-Loop Join,Baseline Slow,1,True,0.0,0.0,0.0,False
-Nested-Loop Join,Static Rule,1,True,0.0,0.0,0.0,False
-String Concatenation,Baseline Slow,1,True,0.0,0.0,0.0,False
-String Concatenation,Static Rule,1,True,98.80470319937487,0.6447773038389049,69.35672543071408,False
-Redundant List,Baseline Slow,1,True,0.0,0.0,0.0,False
-Redundant List,Static Rule,1,True,0.0,0.0,0.0,False
-Memoization,Baseline Slow,1,True,0.0,0.0,0.0,False
-Memoization,Static Rule,1,True,99.99932620850399,0.0,69.99952834595278,False
-Data Structure Choice,Baseline Slow,1,True,0.0,0.0,0.0,False
-Data Structure Choice,Static Rule,1,True,0.0,0.0,0.0,False
-Multi-Pass Reduction,Baseline Slow,1,True,0.0,0.0,0.0,False
-Multi-Pass Reduction,Static Rule,1,True,0.0,0.0,0.0,False
+Duplicate Detection,Baseline Slow,1,TRUE,0.0,0.0,0.0,FALSE
+Duplicate Detection,Static Rule,1,TRUE,-5.60474212141633,0.0,0.0,TRUE
+Duplicate Detection,Single-Shot LLM,1,TRUE,99.9010345085709,0.0,69.93072415599960,FALSE
+Duplicate Detection,One-Pass Profile,1,TRUE,47.88373006961970,0.0,33.51861104873380,FALSE
+Duplicate Detection,Critic-Refiner Agent,1,TRUE,99.92383411932110,0.0,69.94668388352480,FALSE
+Linear Search,Baseline Slow,1,TRUE,0.0,0.0,0.0,FALSE
+Linear Search,Static Rule,1,TRUE,0.0,0.0,0.0,FALSE
+Linear Search,Single-Shot LLM,1,FALSE,0.0,0.0,0.0,FALSE
+Linear Search,One-Pass Profile,1,TRUE,97.24315864264850,0.0,68.07021104985390,FALSE
+Linear Search,Critic-Refiner Agent,1,TRUE,97.19362864905980,0.0,68.03554005434180,FALSE
+Loop Aggregation,Baseline Slow,1,TRUE,0.0,0.0,0.0,FALSE
+Loop Aggregation,Static Rule,1,TRUE,62.857148141090800,0.0,44.00000369876360,FALSE
+Loop Aggregation,Single-Shot LLM,1,FALSE,0.0,0.0,0.0,FALSE
+Loop Aggregation,One-Pass Profile,1,TRUE,62.12704954046410,0.0,43.48893467832490,FALSE
+Loop Aggregation,Critic-Refiner Agent,1,TRUE,30.140635660265800,0.0,21.098444962186100,FALSE
+Top-K Selection,Baseline Slow,1,TRUE,0.0,0.0,0.0,FALSE
+Top-K Selection,Static Rule,1,TRUE,0.0,0.0,0.0,FALSE
+Top-K Selection,Single-Shot LLM,1,FALSE,0.0,0.0,0.0,FALSE
+Top-K Selection,One-Pass Profile,1,FALSE,0.0,0.0,0.0,FALSE
+Top-K Selection,Critic-Refiner Agent,1,TRUE,22.427474753485500,99.24105043992210,45.4715474594165,FALSE
+Nested-Loop Join,Baseline Slow,1,TRUE,0.0,0.0,0.0,FALSE
+Nested-Loop Join,Static Rule,1,TRUE,0.0,0.0,0.0,FALSE
+Nested-Loop Join,Single-Shot LLM,1,FALSE,98.90806276887460,0.0,69.23564393821220,FALSE
+Nested-Loop Join,One-Pass Profile,1,TRUE,95.49800982578320,0.0,66.84860687804830,FALSE
+Nested-Loop Join,Critic-Refiner Agent,1,FALSE,97.24811891854940,0.0,68.07368324298450,FALSE
+String Concatenation,Baseline Slow,1,TRUE,0.0,0.0,0.0,FALSE
+String Concatenation,Static Rule,1,TRUE,98.57210976673320,0.6447773038389050,69.19391002786490,FALSE
+String Concatenation,Single-Shot LLM,1,FALSE,0.0,0.0,0.0,FALSE
+String Concatenation,One-Pass Profile,1,TRUE,96.53344336475930,0.6447773038389050,67.76684354648310,FALSE
+String Concatenation,Critic-Refiner Agent,1,TRUE,96.54071036406240,0.6447773038389050,67.77193044599540,FALSE
+Redundant List,Baseline Slow,1,TRUE,0.0,0.0,0.0,FALSE
+Redundant List,Static Rule,1,TRUE,0.0,0.0,0.0,FALSE
+Redundant List,Single-Shot LLM,1,FALSE,0.0,0.0,0.0,FALSE
+Redundant List,One-Pass Profile,1,TRUE,4.933779366458170,99.99375033254140,33.451770656283100,FALSE
+Redundant List,Critic-Refiner Agent,1,TRUE,4.983264413321310,99.99375033254140,33.486410189087300,FALSE
+Memoization,Baseline Slow,1,TRUE,0.0,0.0,0.0,FALSE
+Memoization,Static Rule,1,TRUE,99.99938583218860,0.0,69.99957008253200,FALSE
+Memoization,Single-Shot LLM,1,FALSE,0.0,0.0,0.0,FALSE
+Memoization,One-Pass Profile,1,TRUE,99.99812238361950,24.285714285714300,77.28439995424790,FALSE
+Memoization,Critic-Refiner Agent,1,TRUE,99.9985361117314,24.285714285714300,77.28468956392630,FALSE
+Data Structure Choice,Baseline Slow,1,TRUE,0.0,0.0,0.0,FALSE
+Data Structure Choice,Static Rule,1,TRUE,0.0,0.0,0.0,FALSE
+Data Structure Choice,Single-Shot LLM,1,FALSE,0.0,0.0,0.0,FALSE
+Data Structure Choice,One-Pass Profile,1,TRUE,99.15228995821190,0.0,69.40660297074830,FALSE
+Data Structure Choice,Critic-Refiner Agent,1,TRUE,99.39005649804570,0.0,69.57303954863200,FALSE
+Multi-Pass Reduction,Baseline Slow,1,TRUE,0.0,0.0,0.0,FALSE
+Multi-Pass Reduction,Static Rule,1,TRUE,0.0,0.0,0.0,FALSE
+Multi-Pass Reduction,Single-Shot LLM,1,FALSE,0.0,0.0,0.0,FALSE
+Multi-Pass Reduction,One-Pass Profile,1,TRUE,-1061.043730394760,0.0,0.0,TRUE
+Multi-Pass Reduction,Critic-Refiner Agent,1,TRUE,0.0,0.0,0.0,FALSE
