@@ -1,7 +1,7 @@
 # GreenStackAI — Green-Code Refactoring Agent
 
 CS 498 AI Agents in the Wild | UIUC | Spring 2026
-Group S11: Miguel Huamani, Aanya Singh Dhankhar, Haoming Qin, Santiago Martinez
+Group S11: Miguel Angel Huamani, Aanya Singh Dhankhar, Haoming Qin, Santiago Martinez
 
 ## Overview
 GreenPyBench is a benchmark for evaluating automated performance optimization capabilities of AI agents on Python workloads. The implemented Critic-Refiner agent profiles target code using a harness, diagnoses structural hotspots, and synthesizes complexity-reducing refactoring via the ReAct framework to save energy and runtime.
