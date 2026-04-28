@@ -265,8 +265,8 @@ if __name__ == "__main__":
     parser.add_argument("--no-llm", action="store_true", help="Skip any LLM-based runs")
     parser.add_argument("--resume-from", type=str, default=None, help="Resume evaluation from this task name (skips earlier tasks)")
     parser.add_argument("--trials", type=int, default=int(os.environ.get("EVAL_TRIALS", "3")), help="Trials per LLM system per task")
-    parser.add_argument("--provider", type=str, default=os.environ.get("LLM_PROVIDER", "anthropic"), help="LLM provider: anthropic|openai_compatible|tinker")
-    parser.add_argument("--model", type=str, default=os.environ.get("LLM_MODEL", "claude-sonnet-4-5-20250929"), help="Model identifier for the configured provider")
+    parser.add_argument("--provider", type=str, default=os.environ.get("LLM_PROVIDER", "tinker"), help="LLM provider: anthropic|openai_compatible|tinker")
+    parser.add_argument("--model", type=str, default=os.environ.get("LLM_MODEL", "Qwen/Qwen3-30B-A3B-Instruct-2507"), help="Model identifier for the configured provider")
     parser.add_argument("--base-url", type=str, default=os.environ.get("LLM_BASE_URL"), help="Optional override for API base URL")
     args = parser.parse_args()
 

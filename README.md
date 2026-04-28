@@ -27,11 +27,15 @@ Ensure you are using Python 3.10+. It is highly recommended to build within a cl
 ### API Key
 The evaluator supports both direct Anthropic and OpenAI-compatible endpoints (e.g., Tinker).
 
+Final reported one-trial results in this repository were generated with:
+- Provider: `tinker`
+- Model: `Qwen/Qwen3-30B-A3B-Instruct-2507`
+
 Anthropic:
 ```bash
 export LLM_PROVIDER=anthropic
 export ANTHROPIC_API_KEY=your_key_here
-export LLM_MODEL=your_model_id_here
+export LLM_MODEL=Qwen/Qwen3-30B-A3B-Instruct-2507
 ```
 
 Tinker / OpenAI-compatible:
@@ -39,7 +43,7 @@ Tinker / OpenAI-compatible:
 export LLM_PROVIDER=tinker
 export TINKER_API_KEY=your_tinker_key_here
 export TINKER_BASE_URL=your_tinker_base_url_here   # e.g. https://<your-host>/v1
-export LLM_MODEL=your_model_id_here
+export LLM_MODEL=Qwen/Qwen3-30B-A3B-Instruct-2507
 ```
 
 ## Running the Benchmark

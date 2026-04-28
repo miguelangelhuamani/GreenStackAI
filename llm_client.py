@@ -8,7 +8,7 @@ from typing import Optional
 
 @dataclass
 class LLMConfig:
-    model: str = "claude-sonnet-4-5-20250929"
+    model: str = "Qwen/Qwen3-30B-A3B-Instruct-2507"
     max_tokens: int = 2048
     temperature: float = 0.2
     retries: int = 8
@@ -20,7 +20,7 @@ class LLMConfig:
 class LLMClient:
     def __init__(self, cfg: LLMConfig):
         self.cfg = cfg
-        provider = (cfg.provider or os.environ.get("LLM_PROVIDER") or "anthropic").lower()
+        provider = (cfg.provider or os.environ.get("LLM_PROVIDER") or "tinker").lower()
         if provider in {"openai", "openai_responses", "openai_compatible", "tinker"}:
             self.provider = "openai_compatible"
             self._init_openai_compatible()

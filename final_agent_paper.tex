@@ -24,7 +24,7 @@
 \maketitle
 
 \begin{abstract}
-We present the \textbf{Green-Code Refactoring Agent}, a Critic--Refiner system that autonomously identifies and eliminates computational inefficiencies in Python programs. The agent operates in a closed ReAct loop: a Critic interprets profiler outputs to diagnose bottlenecks and propose algorithmic changes; a Refiner generates targeted rewrites; a Controller validates correctness via PyTest and re-profiles to accept or roll back each candidate. We evaluate the agent on GreenPyBench, our 10-task Python optimization benchmark, against three baselines: a static rule rewriter, a single-shot LLM rewrite, and a one-pass profile-guided rewrite. All LLM-based systems use a shared Tinker-routed model configuration for fairness. In the reported one-trial run, the agent achieves 90\% correctness across tasks while retaining the strongest overall VIS among LLM-based methods.
+We present the \textbf{Green-Code Refactoring Agent}, a Critic--Refiner system that autonomously identifies and eliminates computational inefficiencies in Python programs. The agent operates in a closed ReAct loop: a Critic interprets profiler outputs to diagnose bottlenecks and propose algorithmic changes; a Refiner generates targeted rewrites; a Controller validates correctness via PyTest and re-profiles to accept or roll back each candidate. We evaluate the agent on GreenPyBench, our 10-task Python optimization benchmark, against three baselines: a static rule rewriter, a single-shot LLM rewrite, and a one-pass profile-guided rewrite. All LLM-based systems use a shared Tinker-routed QWEN configuration (\texttt{Qwen/Qwen3-30B-A3B-Instruct-2507}) for fairness. In the reported one-trial run, the agent achieves 90\% correctness across tasks while retaining the strongest overall VIS among LLM-based methods.
 \end{abstract}
 
 %% ============================================================
@@ -70,7 +70,7 @@ The Controller maintains a \emph{best-known solution} throughout the loop. After
 
 \subsection{Implementation Details}
 
-\noindent\textbf{LLM:} shared Tinker-routed instruction model (same model ID across all LLM conditions), temperature 0.2, max 1400 tokens. \\
+\noindent\textbf{LLM:} \texttt{Qwen/Qwen3-30B-A3B-Instruct-2507} via Tinker (same model ID across all LLM conditions), temperature 0.2, max 1400 tokens. \\
 \textbf{Memory:} \texttt{tracemalloc} peak traced allocation (KB). \\
 \textbf{Timing:} 7-run median wall-clock after 2 warm-ups, isolated subprocess. \\
 \textbf{Quality penalty:} \texttt{radon} cyclomatic complexity; $-0.25$ VIS if complexity increases $>$20\% without $\geq$10\% speedup. \\
