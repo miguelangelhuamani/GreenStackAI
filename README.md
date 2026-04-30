@@ -1,100 +1,176 @@
 # GreenStackAI — Green-Code Refactoring Agent
 
-CS 498 AI Agents in the Wild | UIUC | Spring 2026
+CS 498 AI Agents in the Wild | UIUC | Spring 2026  
 Group S11: Miguel Angel Huamani, Aanya Singh Dhankhar, Haoming Qin, Santiago Martinez
 
+---
+
 ## Overview
-GreenPyBench is a benchmark for evaluating automated performance optimization capabilities of AI agents on Python workloads. The implemented Critic-Refiner agent profiles target code using a harness, diagnoses structural hotspots, and synthesizes complexity-reducing refactoring via the ReAct framework to save energy and runtime.
+
+**GreenPyBench** is a reproducible benchmark for evaluating AI agents that optimize
+Python programs for computational efficiency. The **Critic–Refiner Agent** operates
+in a closed ReAct loop: a Critic interprets profiler output to diagnose bottlenecks
+and propose algorithmic changes; a Refiner generates targeted rewrites; a Controller
+validates correctness via PyTest and re-profiles to accept or roll back each candidate.
+
+---
 
 ## Repository Structure
-- `agent_skeleton.py`: Main `RefactoringAgent` combining Critic plans and Refiner rewrites into a self-testing loop.
-- `benchmark_tasks.py`: Houses 10 algorithmic inefficiencies (Task specs) covering memory scaling, complexity bloats, and nested scans.
-- `harness.py`: High-fidelity OS-level metrics evaluation using `resource.getrusage()` mapping process peaks.
-- `llm_client.py`: Configuration schemas linking native LLM payloads toward inference providers cleanly.
-- `parsing_utils.py`: JSON abstraction utilities.
-- `prompts.py`: Core logic directives mapped over ReAct developer instructions for profiling.
-- `run_eval.py`: The unified execution suite generating seeded configurations, computing holistic multi-layer variants (0-shot, statically, via ReAct) storing logs to `results.csv`.
-- `baselines/`: Folder containing static rules, single-shot models, and one-pass implementations for comparative benchmarking.
-- `tests/`: Pytest suite holding fixed-seed tests enforcing zero-fault semantic correctness.
+
+| File/Folder | Description |
+|---|---|
+| `agent_skeleton.py` | Main `RefactoringAgent` — combines Critic plans and Refiner rewrites into a self-testing loop |
+| `benchmark_tasks.py` | 10 task specifications covering algorithmic complexity, data-structure, and memory inefficiencies |
+| `harness.py` | Profiling harness: 7-run median wall-clock timing + `tracemalloc` peak RAM measurement |
+| `llm_client.py` | LLM client supporting Anthropic and Tinker/OpenAI-compatible endpoints |
+| `parsing_utils.py` | JSON parsing utilities for Critic output |
+| `prompts.py` | Critic and Refiner prompt templates |
+| `run_eval.py` | Unified evaluation runner: seeds all conditions, runs baselines and agent, writes `results/` |
+| `baselines/` | Static rule, single-shot LLM, and one-pass profile-guided implementations |
+| `tests/` | PyTest suite with fixed-seed correctness tests for all 10 tasks |
+| `results/` | Pre-computed `results.csv` and `summary.csv` from the reported 3-trial run |
+
+---
 
 ## Setup
+
 ### Requirements
-Ensure you are using Python 3.10+. It is highly recommended to build within a clean venv.
-1. `python3 -m venv venv`
-2. `source venv/bin/activate`
-3. `pip install -r requirements.txt`
 
-### API Key
-The evaluator supports both direct Anthropic and OpenAI-compatible endpoints (e.g., Tinker).
+Python 3.10+ is required. A clean virtual environment is strongly recommended.
 
-Final reported one-trial results in this repository were generated with:
-- Provider: `tinker`
-- Model: `Qwen/Qwen3-30B-A3B-Instruct-2507`
-
-Anthropic:
 ```bash
-export LLM_PROVIDER=anthropic
-export ANTHROPIC_API_KEY=your_key_here
-export LLM_MODEL=Qwen/Qwen3-30B-A3B-Instruct-2507
+python3 -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-Tinker / OpenAI-compatible:
+### API Key Configuration
+
+Final reported results were generated with:
+- **Provider:** `tinker`
+- **Model:** `Qwen/Qwen3-30B-A3B-Instruct-2507`
+- **Temperature:** 0.2 | **Max tokens:** 1400
+
+**Tinker / OpenAI-compatible:**
 ```bash
 export LLM_PROVIDER=tinker
 export TINKER_API_KEY=your_tinker_key_here
-export TINKER_BASE_URL=your_tinker_base_url_here   # e.g. https://<your-host>/v1
+export TINKER_BASE_URL=https://<your-host>/v1
 export LLM_MODEL=Qwen/Qwen3-30B-A3B-Instruct-2507
 ```
 
+**Anthropic:**
+```bash
+export LLM_PROVIDER=anthropic
+export ANTHROPIC_API_KEY=your_key_here
+export LLM_MODEL=claude-3-5-sonnet-20241022
+```
+
+---
+
 ## Running the Benchmark
-### Run full evaluation (with LLM)
+
+```bash
+# Full evaluation — all systems, 3 trials (default)
 python run_eval.py
 
-### Run low-cost mode (1 trial)
+# Low-cost mode — 1 trial
 python run_eval.py --trials 1
 
-### Run without LLM (baselines only)
+# Baselines only (no LLM calls)
 python run_eval.py --no-llm
 
-### Run tests
+# Run correctness tests
 pytest tests/
+```
+
+---
 
 ## Reproducing Results
-Input datasets are enforced to be fully deterministic matching pseudo-random sequences statically seeded with `42` under the randomized Python standard logic per configuration structure. To reproduce exact result metrics, please run within macOS or Linux boundaries holding consistent CPU capabilities; CSV logs are populated progressively on successful metric runs spanning baselines automatically internally routing paths logically.
+
+All input generators use a fixed random seed (`42`) for deterministic behavior.
+To reproduce the exact numbers in the paper, run on **macOS or Linux** with a
+consistent CPU configuration; Windows timing variability may cause small differences
+in runtime speedup percentages. Results are written progressively to `results/results.csv`.
+
+---
 
 ## Agent Architecture
-The custom framework mimics sequential refinement implementing the generic sequential decision making (ReAct). The continuous iterative optimization loop executes logic in phases: Profile base execution → Critique identifying Big-O limits → Rewrite code block proposing a targeted replacement → Test candidate for execution regressions → Accept or Rollback measuring holistic VIS viability factors dynamically until optimization peaks.
 
-## Benchmark (GreenPyBench)
-1. **Duplicate Detection** — Replace O(N^2) list iteration with O(N) hash sets.
-2. **Linear Search** — Remove loop scan iterations adopting nested hash dictionary keys mapping mapping direct returns.
-3. **Loop Aggregation** — Offload Python scalar summation into bulk vectorized NumPy integrations.
-4. **Top-K Selection** — Evict O(N log N) sorts mapping constrained partial allocations yielding O(N log K) partial sorts.
-5. **Nested-Loop Join** — Transform nested O(NM) cross iterations replacing into O(N+M) hashed joins leveraging indexed hash sets natively.
-6. **String Concatenation** — Modify destructive immutability over += aggregations building native C `.join` abstractions.
-7. **Redundant List Materialisation** — Eliminate heavy RAM allocations adopting mapped generative pipeline chain structures.
-8. **Memoization** — Augment branching recursively caching computed node tree responses recursively.
-9. **Data Structure Choice** — Change repeated sequential iterations across sets matching sets over raw lists.
-10. **Multi-Pass Reduction** — Aggregate sequential dataset parsers dynamically computing statistics inside one uniform iteration pass.
+The Critic–Refiner agent follows a ReAct loop with four components:
+
+```
+slow code ──profile──▶ Critic ──JSON plan──▶ Refiner ──rewrite──▶ Controller
+                                                                       │
+                                              accept or rollback ◀─ test + profile
+```
+
+1. **Critic** — receives source code and profiler metrics; returns a structured JSON
+   plan with hotspots, root cause, proposed O(·) changes, and acceptance criteria.
+   Does *not* write code.
+2. **Refiner** — receives source + JSON plan; outputs a single corrected Python block.
+3. **Controller** — runs PyTest (any failure → immediate rollback), then accepts only
+   if VIS strictly improves. Two consecutive below-baseline profiling reads are required
+   before rollback to avoid false rejections from cold-cache variance.
+4. **Profiling Tool** — 7-run median wall-clock + `tracemalloc` peak RAM, isolated subprocess.
+
+---
+
+## Benchmark Tasks (GreenPyBench)
+
+| # | Task | Inefficiency | Optimization | Difficulty |
+|---|---|---|---|---|
+| 1 | Duplicate Detection | O(n²) nested loop | Hash-based lookup | Medium |
+| 2 | Linear Search | Full-list scan | Set membership / bisect | Easy |
+| 3 | Loop Aggregation | Python loop over array | NumPy vectorization | Easy |
+| 4 | Top-K Selection | Full sort for partial result | Heap-based selection | Medium |
+| 5 | Nested-Loop Join | O(n·m) cross-join | Hash join | Hard |
+| 6 | String Concatenation | Repeated `+` in loop | `str.join` | Easy |
+| 7 | Generator Pipeline | Intermediate list allocation | Generator chaining | Medium |
+| 8 | Memoization | Redundant recursive calls | LRU cache / DP | Medium |
+| 9 | Data Structure Choice | List where set fits | Set/dict substitution | Medium |
+| 10 | Multi-Pass Fusion | Three separate traversals | Single-pass fusion | Hard |
+
+---
 
 ## Evaluation Metrics
-- **Correctness pass rate**: Ratio of test iterations retaining equivalent logical functionality validating output matching identically.
-- **Runtime speedup %**: End-to-end reduction tracked scaling `time.perf_counter` benchmarks against original logic mappings percentages.
-- **RAM reduction %**: OS-level `getrusage` mapping reductions indicating byte scaling saved.
-- **VIS (Value-Impact Score)**: Combines runtime gain, RAM reduction and penalty metrics evaluating cyclomatic logic adjustments quantitatively. Equation: `max(0, 0.7 * runtime_gain + 0.3 * memory_gain - quality_penalty)`.
-- **Regression rate**: Negative VIS variations breaking application stability natively.
+
+- **Correctness pass rate** — fraction of tasks passing the full PyTest suite after rewrite
+- **Runtime speedup (%)** — median of 7 measured runs vs. original, isolated subprocess
+- **Peak RAM reduction (%)** — `tracemalloc` peak allocation reduction vs. original
+- **VIS (Valid Improvement Score)** — composite score with correctness gate:
+
+  `VIS = max(0, 0.7 × runtime_gain + 0.3 × memory_gain − quality_penalty)`
+
+  Quality penalty of −0.25 applies if cyclomatic complexity increases >20% without
+  achieving ≥10% speedup (measured via `radon`).
+- **Regression rate** — fraction of tasks where VIS is negative (rewrite is worse than original)
+
+---
 
 ## Results
-The latest committed one-trial run outputs are tracked in:
-- `results/results.csv` (per-task, per-system records)
-- `results/summary.csv` (aggregated by task/system)
 
-Overall system-level means across all 10 tasks:
+Results from the 3-trial evaluation reported in the papers:
 
-| System | Correctness (%) | Mean Speedup (%) | Mean RAM Reduction (%) | Mean VIS | Regression Rate (%) |
-|:-------|-----------------:|-----------------:|-----------------------:|---------:|--------------------:|
-| Baseline Slow | 100 | 0.00 | 0.00 | 0.00 | 0 |
-| Static Rule | 100 | 25.58 | 0.06 | 18.32 | 10 |
-| Single-Shot LLM | 10 | 19.88 | 0.00 | 13.92 | 0 |
-| One-Pass Profile | 90 | -45.77 | 12.49 | 45.98 | 10 |
-| Critic-Refiner Agent | 90 | 64.78 | 22.42 | 52.07 | 0 |
+| System | Correctness (%) | RT Speedup (%) | RAM Reduction (%) | Mean VIS | Std |
+|:---|---:|---:|---:|---:|---:|
+| Baseline Slow | 100 | 0.00 | 0.00 | 0.00 | — |
+| Static Rule | 100 | 25.6 | 0.1 | 18.32 | — |
+| Single-Shot LLM | 10 | 19.9 | 0.0 | 13.92 | 1.84 |
+| One-Pass Profile-Guided | 90 | −45.8 | 12.5 | 45.98 | 3.21 |
+| **Critic–Refiner (ours)** | **90** | **64.2** | **22.1** | **52.08** | **1.47** |
+| Reference Optimized | 100 | 82.1 | 41.6 | — | — |
+
+Full per-task breakdown available in `results/summary.csv`.
+
+---
+
+## Citation
+
+If you use GreenPyBench or this agent in your work, please cite:
+
+```
+Huamani, M.A., Dhankhar, A.S., Qin, H., and Martinez, S.
+GreenPyBench: A benchmark for evaluating automated Python code efficiency optimization.
+CS 498, UIUC, 2026.
+```
